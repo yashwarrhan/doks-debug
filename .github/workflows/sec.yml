@@ -1,4 +1,4 @@
-name: Generate Security Report
+name: Generate Vulnerability Reports
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 
 jobs:
   report:
-    name: Generate Report
     runs-on: ubuntu-latest
 
     steps:
@@ -20,36 +19,50 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Generate Report
+    - name: Generate Reports
       run: |
+        import csv
         import json
+        import os
 
-        data = """
-        [
-          {"issue": "Privileged container", "severity": "High", "details": "Container is running with elevated privileges.", "file": "deployment.yaml", "line": "23", "suggestion": "Consider removing 'privileged: true' or restrict its usage."},
-          {"issue": "Docker socket mount", "severity": "High", "details": "Container has access to the Docker daemon socket.", "file": "deployment.yaml", "line": "55", "suggestion": "Avoid mounting Docker socket inside containers."},
-          {"issue": "Host network usage", "severity": "Medium", "details": "Container is using hostNetwork.", "file": "deployment.yaml", "line": "26", "suggestion": "Consider not using the host's network namespace unless necessary."},
-          {"issue": "Host PID usage", "severity": "Medium", "details": "Container shares the host's PID namespace.", "file": "deployment.yaml", "line": "21", "suggestion": "Avoid using hostPID unless necessary for troubleshooting."},
-          {"issue": "Running without root user control", "severity": "Low", "details": "Container does not specify a non-root user.", "file": "deployment.yaml", "line": "30", "suggestion": "Specify 'runAsUser: <uid>' and 'runAsGroup: <gid>' in your security context."}
+        # Sample data mimicking vulnerabilities detected
+        vulnerabilities = [
+          {"issue": "Privileged container", "severity": "High", "file": "daemonset.yaml", "line": "20", "suggestion": "Set 'privileged: false' in your container securityContext."},
+          {"issue": "Docker socket mount", "severity": "High", "file": "daemonset.yaml", "line": "35", "suggestion": "Remove the mount of '/var/run/docker.sock'."},
+          {"issue": "Host network usage", "severity": "Medium", "file": "daemonset.yaml", "line": "25", "suggestion": "Set 'hostNetwork: false'."},
+          {"issue": "Host PID usage", "severity": "Medium", "file": "daemonset.yaml", "line": "22", "suggestion": "Set 'hostPID: false'."},
+          {"issue": "Unrestricted root user", "severity": "Medium", "file": "daemonset.yaml", "line": "18", "suggestion": "Define 'runAsNonRoot: true' in securityContext."},
         ]
-        """
-        issues = json.loads(data)
 
-        html = "<html><head><style>table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid black; padding: 8px; } th { background-color: #f2f2f2; }</style></head><body>"
-        html += "<h1>Security Report</h1><table><tr><th>Issue</th><th>Severity</th><th>Details</th><th>File</th><th>Line</th><th>Suggestion</th></tr>"
+        # Generate HTML report
+        html_content = "<html><head><title>Vulnerability Report</title></head><body>"
+        html_content += "<h1>Vulnerability Report</h1><table border='1'><tr><th>Issue</th><th>Severity</th><th>File</th><th>Line</th><th>Suggestion</th></tr>"
         
-        for issue in issues:
-            html += f"<tr><td>{issue['issue']}</td><td>{issue['severity']}</td><td>{issue['details']}</td><td>{issue['file']}</td><td>{issue['line']}</td><td>{issue['suggestion']}</td></tr>"
+        for vuln in vulnerabilities:
+            html_content += f"<tr><td>{vuln['issue']}</td><td>{vuln['severity']}</td><td>{vuln['file']}</td><td>{vuln['line']}</td><td>{vuln['suggestion']}</td></tr>"
         
-        html += "</table></body></html>"
+        html_content += "</table></body></html>"
+        with open('vulnerability_report.html', 'w') as file:
+            file.write(html_content)
 
-        with open('report.html', 'w') as file:
-            file.write(html)
+        # Generate CSV report
+        csv_file = 'vulnerability_report.csv'
+        with open(csv_file, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Issue', 'Severity', 'File', 'Line', 'Suggestion'])
+            for vuln in vulnerabilities:
+                writer.writerow([vuln['issue'], vuln['severity'], vuln['file'], vuln['line'], vuln['suggestion']])
 
       shell: python
 
-    - name: Upload Report
+    - name: Upload HTML report
       uses: actions/upload-artifact@v2
       with:
-        name: Security-Report
-        path: report.html
+        name: HTML-Vulnerability-Report
+        path: vulnerability_report.html
+
+    - name: Upload CSV report
+      uses: actions/upload-artifact@v2
+      with:
+        name: CSV-Vulnerability-Report
+        path: vulnerability_report.csv
