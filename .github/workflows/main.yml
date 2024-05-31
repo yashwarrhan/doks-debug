@@ -2,59 +2,40 @@ name: Security Scan
 
 on:
   push:
-   
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   security_scan:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-    # CodeQL Analysis
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
+      with:
+        languages: 'ruby'  # Specify other languages as needed, separated by commas
 
-    - name: Run CodeQL
+    - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
-      with:
-        output: codeql-results
 
-    # Convert CodeQL SARIF to HTML (using a SARIF-to-HTML converter)
-    - name: Convert CodeQL results to HTML
+    - name: Upload CodeQL results as an artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: codeql-results
+        path: codeql-results/**/*.sarif
+
+    - name: Convert CodeQL results to HTML (Example step)
       run: |
-        wget https://github.com/sariftools/sarif-to-html/releases/download/v1.0/sarif-to-html
-        chmod +x sarif-to-html
-        ./sarif-to-html -o codeql-report.html codeql-results/*.sarif
+        # Example placeholder command, replace with your actual conversion tool/script
+        echo "<html><body><h1>CodeQL Analysis Results</h1><pre>$(cat codeql-results/**/*.sarif)</pre></body></html>" > codeql-results.html
 
-    # Trivy Vulnerability Scanner
-    - name: Run Trivy Vulnerability Scanner
-      uses: aquasecurity/trivy-action@0.0.14
+    - name: Upload HTML report as an artifact
+      uses: actions/upload-artifact@v2
       with:
-        image-ref: 'docker.io/library/python:3.8-slim'
-        format: 'table'
-        exit-code: '1'
-        output: trivy-results.txt
-
-    # Convert Trivy output to HTML
-    - name: Convert Trivy results to HTML
-      run: |
-        echo "<html><body><h1>Trivy Scan Results</h1><pre>$(cat trivy-results.txt)</pre></body></html>" > trivy-report.html
-
-    # Anchore Container Scan
-    - name: Run Anchore Scan
-      uses: anchore/scan-action@v2
-      with:
-        image: "yourdockerhubusername/doks-debug:latest"
-        fail-build: true
-
-    # Convert Anchore output to HTML (assuming JSON output)
-    - name: Convert Anchore results to HTML
-      run: |
-        echo "<html><body><h1>Anchore Scan Results</h1><pre>$(cat anchore-results.json)</pre></body></html>" > anchore-report.html
-
-    # Upload Artifacts
-    - uses: actions/upload-artifact@v2
-      with:
-        name: Security-Reports
-        path: |
-          *.html
+        name: codeql-html-report
+        path: codeql-results.html
