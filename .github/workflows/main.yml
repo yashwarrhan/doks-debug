@@ -2,7 +2,8 @@ name: Security Scan
 
 on:
   push:
-    
+ 
+
 jobs:
   security_scan:
     runs-on: ubuntu-latest
@@ -11,12 +12,12 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
+      uses: github/codeql-action/init@v2
       with:
         languages: 'ruby'  # Specify other languages as needed, separated by commas
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      uses: github/codeql-action/analyze@v2
 
     - name: Upload CodeQL results as an artifact
       uses: actions/upload-artifact@v2
