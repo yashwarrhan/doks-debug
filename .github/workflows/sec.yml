@@ -1,0 +1,55 @@
+name: Generate Security Report
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  report:
+    name: Generate Report
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Generate Report
+      run: |
+        import json
+
+        data = """
+        [
+          {"issue": "Privileged container", "severity": "High", "details": "Container is running with elevated privileges.", "file": "deployment.yaml", "line": "23", "suggestion": "Consider removing 'privileged: true' or restrict its usage."},
+          {"issue": "Docker socket mount", "severity": "High", "details": "Container has access to the Docker daemon socket.", "file": "deployment.yaml", "line": "55", "suggestion": "Avoid mounting Docker socket inside containers."},
+          {"issue": "Host network usage", "severity": "Medium", "details": "Container is using hostNetwork.", "file": "deployment.yaml", "line": "26", "suggestion": "Consider not using the host's network namespace unless necessary."},
+          {"issue": "Host PID usage", "severity": "Medium", "details": "Container shares the host's PID namespace.", "file": "deployment.yaml", "line": "21", "suggestion": "Avoid using hostPID unless necessary for troubleshooting."},
+          {"issue": "Running without root user control", "severity": "Low", "details": "Container does not specify a non-root user.", "file": "deployment.yaml", "line": "30", "suggestion": "Specify 'runAsUser: <uid>' and 'runAsGroup: <gid>' in your security context."}
+        ]
+        """
+        issues = json.loads(data)
+
+        html = "<html><head><style>table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid black; padding: 8px; } th { background-color: #f2f2f2; }</style></head><body>"
+        html += "<h1>Security Report</h1><table><tr><th>Issue</th><th>Severity</th><th>Details</th><th>File</th><th>Line</th><th>Suggestion</th></tr>"
+        
+        for issue in issues:
+            html += f"<tr><td>{issue['issue']}</td><td>{issue['severity']}</td><td>{issue['details']}</td><td>{issue['file']}</td><td>{issue['line']}</td><td>{issue['suggestion']}</td></tr>"
+        
+        html += "</table></body></html>"
+
+        with open('report.html', 'w') as file:
+            file.write(html)
+
+      shell: python
+
+    - name: Upload Report
+      uses: actions/upload-artifact@v2
+      with:
+        name: Security-Report
+        path: report.html
