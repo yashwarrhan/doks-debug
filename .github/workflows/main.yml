@@ -19,7 +19,7 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
-        languages: 'ruby'  # Specify languages here, separated by commas if necessary
+        languages: 'javascript'  # Use 'javascript' for Shell scripts; CodeQL uses this for Shell script analysis
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
@@ -29,14 +29,3 @@ jobs:
       with:
         name: codeql-results
         path: codeql-results/**/*.sarif
-
-    # Optional: Convert CodeQL results to HTML (you will need to provide or develop a suitable conversion tool/script)
-    - name: Convert CodeQL results to HTML
-      run: |
-        echo "<html><body><h1>CodeQL Analysis Results</h1><pre>$(cat codeql-results/**/*.sarif)</pre></body></html>" > codeql-results.html
-
-    - name: Upload HTML report as an artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: codeql-html-report
-        path: codeql-results.html
