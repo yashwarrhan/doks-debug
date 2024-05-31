@@ -11,6 +11,7 @@ on:
 jobs:
   security_scan:
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -18,7 +19,7 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
-        languages: 'ruby'  # Specify other languages as needed, separated by commas
+        languages: 'ruby'  # Specify languages here, separated by commas if necessary
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
@@ -29,9 +30,9 @@ jobs:
         name: codeql-results
         path: codeql-results/**/*.sarif
 
-    - name: Convert CodeQL results to HTML (Example step)
+    # Optional: Convert CodeQL results to HTML (you will need to provide or develop a suitable conversion tool/script)
+    - name: Convert CodeQL results to HTML
       run: |
-        # Example placeholder command, replace with your actual conversion tool/script
         echo "<html><body><h1>CodeQL Analysis Results</h1><pre>$(cat codeql-results/**/*.sarif)</pre></body></html>" > codeql-results.html
 
     - name: Upload HTML report as an artifact
