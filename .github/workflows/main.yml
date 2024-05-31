@@ -1,4 +1,4 @@
-name: Semgrep Analysis
+name: Semgrep Analysis with HTML Report
 
 on:
   push:
@@ -12,9 +12,6 @@ jobs:
   semgrep:
     name: Run Semgrep
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
 
     steps:
     - name: Checkout code
@@ -31,8 +28,14 @@ jobs:
     - name: Run Semgrep
       run: semgrep --config=p/r2c-ci --json | tee semgrep-results.json
 
+    - name: Install Python packages for processing
+      run: pip install jinja2
+
+    - name: Convert JSON results to HTML
+      run: python .github/scripts/convert_to_html.py
+
     - name: Upload Semgrep results as an artifact
       uses: actions/upload-artifact@v2
       with:
-        name: semgrep-results
-        path: semgrep-results.json
+        name: semgrep-html-report
+        path: semgrep-report.html
