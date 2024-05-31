@@ -1,4 +1,4 @@
-name: Generate Comprehensive Security Report
+name: Comprehensive Security Vulnerability Report
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  report:
+  generate-report:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,37 +19,70 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Generate Report
+    - name: Install Dependencies
       run: |
-        import csv
-        import json
-        import os
+        python -m pip install --upgrade pip
+        pip install pandas
 
-        # Sample data mimicking vulnerabilities detected in Dockerfile and Kubernetes YAMLs
-        vulnerabilities = [
-          {"file": "Dockerfile", "issue": "Outdated zlib package", "severity": "Critical", "details": "zlib/zlib1g@1:1.2.13.dfsg-1 is outdated.", "line": "N/A", "suggestion": "Update to the latest zlib package."},
-          {"file": "Dockerfile", "issue": "Outdated libsystemd", "severity": "High", "details": "systemd/libsystemd0@252.22-1~deb12u1 is outdated.", "line": "N/A", "suggestion": "Update to the latest systemd package."},
-          {"file": "daemonset.yaml", "issue": "Privileged container", "severity": "High", "details": "Container is running with elevated privileges.", "line": "23", "suggestion": "Consider removing 'privileged: true' or restrict its usage."},
-          {"file": "daemonset.yaml", "issue": "Docker socket mount", "severity": "High", "details": "Container has access to the Docker daemon socket.", "line": "55", "suggestion": "Avoid mounting Docker socket inside containers."},
-          {"file": "deployment.yaml", "issue": "Host network usage", "severity": "Medium", "details": "Container is using hostNetwork.", "line": "26", "suggestion": "Consider not using the host's network namespace unless necessary."},
-          # Add additional entries here
-        ]
+    - name: Generate Reports
+      run: |
+        import pandas as pd
+
+        # Define the data
+        data = {
+          "File": [
+            "Dockerfile", "Dockerfile", 
+            "daemonset.yaml", "daemonset.yaml", "daemonset.yaml", "daemonset.yaml", "daemonset.yaml", 
+            "deployment.yaml", "deployment.yaml"
+          ],
+          "Issue": [
+            "Outdated zlib package", "Systemd vulnerability",
+            "Privileged container", "Docker socket mount", "Host network usage", "Host PID namespace", "Host IPC namespace",
+            "Privileged container", "Docker socket mount"
+          ],
+          "Severity": [
+            "Critical", "High",
+            "High", "High", "Medium", "Medium", "Medium",
+            "High", "High"
+          ],
+          "Details": [
+            "zlib/zlib1g@1:1.2.13.dfsg-1 is outdated.", "systemd/libsystemd0@252.22-1~deb12u1 is vulnerable.",
+            "Container runs with elevated privileges.", "Container has access to the Docker daemon socket.", "Container uses hostNetwork.", "Container shares the host's PID namespace.", "Container uses host's IPC.",
+            "Container runs with elevated privileges.", "Container has access to the Docker daemon socket."
+          ],
+          "Line": [
+            "N/A", "N/A",
+            "23", "55", "26", "22", "22",
+            "23", "55"
+          ],
+          "Suggestion": [
+            "Update to a newer zlib version.", "Update to a secure systemd version.",
+            "Set 'privileged: false'.", "Remove mount of Docker daemon socket.", "Set 'hostNetwork: false'.", "Set 'hostPID: false'.", "Set 'hostIPC: false'.",
+            "Set 'privileged: false'.", "Remove mount of Docker daemon socket."
+          ]
+        }
+
+        # Create DataFrame
+        df = pd.DataFrame(data)
 
         # Generate HTML report
-        html_content = "<html><head><style>table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid black; padding: 8px; } th { background-color: #f2f2f2; }</style></head><body>"
-        html_content += "<h1>Security Report</h1><table><tr><th>File</th><th>Issue</th><th>Severity</th><th>Details</th><th>Line</th><th>Suggestion</th></tr>"
-        
-        for vuln in vulnerabilities:
-            html_content += f"<tr><td>{vuln['file']}</td><td>{vuln['issue']}</td><td>{vuln['severity']}</td><td>{vuln['details']}</td><td>{vuln['line']}</td><td>{vuln['suggestion']}</td></tr>"
-        
-        html_content += "</table></body></html>"
-        with open('combined_security_report.html', 'w') as file:
-            file.write(html_content)
+        html_report = df.to_html(index=False)
+        with open('vulnerability_report.html', 'w') as f:
+            f.write(html_report)
+
+        # Generate CSV report
+        df.to_csv('vulnerability_report.csv', index=False)
 
       shell: python
 
-    - name: Upload Combined Report
+    - name: Upload HTML Report
       uses: actions/upload-artifact@v2
       with:
-        name: Combined-Security-Report
-        path: combined_security_report.html
+        name: HTML-Vulnerability-Report
+        path: vulnerability_report.html
+
+    - name: Upload CSV Report
+      uses: actions/upload-artifact@v2
+      with:
+        name: CSV-Vulnerability-Report
+        path: vulnerability_report.csv
